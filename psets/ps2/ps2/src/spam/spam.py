@@ -136,7 +136,58 @@ def predict_from_naive_bayes_model(model, matrix):
     Returns: A numpy array containg the predictions from the model
     """
     # *** START CODE HERE ***
-    return model.predict(matrix)
+import numpy as np
+
+def fit_naive_bayes_model(matrix, labels):
+    """Fit a naive bayes model from scratch using NumPy.
+
+    Args:
+        matrix: A numpy array containing word counts for the training data (shape: [m, vocab_size])
+        labels: The binary (0 or 1) labels for that training data (shape: [m])
+
+    Returns: 
+        A dictionary containing the trained model parameters (priors and log conditional probabilities).
+    """
+    num_messages, vocab_size = matrix.shape
+
+    # 1. Calculate Class Priors: P(y = 1) and P(y = 0)
+    # Total spam messages divided by total messages
+    num_spam = np.sum(labels == 1)
+    p_y_is_1 = num_spam / num_messages
+    p_y_is_0 = 1 - p_y_is_1
+
+    # 2. Separate training matrices by class
+    spam_matrix = matrix[labels == 1]
+    non_spam_matrix = matrix[labels == 0]
+
+    # 3. Calculate word counts with Laplace Smoothing (alpha = 1.0)
+    # Add 1 to numerator for every word, and vocab_size to denominator
+    alpha = 1.0
+    
+    # Sum word occurrences across all spam messages (axis=0 sums columns)
+    spam_word_counts = np.sum(spam_matrix, axis=0)
+    total_spam_words = np.sum(spam_word_counts)
+    
+    # Sum word occurrences across all non-spam messages
+    non_spam_word_counts = np.sum(non_spam_matrix, axis=0)
+    total_non_spam_words = np.sum(non_spam_word_counts)
+
+    # 4. Compute Conditional Probabilities with Laplace smoothing
+    # P(x_j = word | y = 1)
+    p_word_given_spam = (spam_word_counts + alpha) / (total_spam_words + alpha * vocab_size)
+    
+    # P(x_j = word | y = 0)
+    p_word_given_non_spam = (non_spam_word_counts + alpha) / (total_non_spam_words + alpha * vocab_size)
+
+    # 5. Convert to Log Probabilities to prevent computer underflow during prediction
+    model = {
+        'p_y_is_1': p_y_is_1,
+        'p_y_is_0': p_y_is_0,
+        'log_p_word_given_spam': np.log(p_word_given_spam),
+        'log_p_word_given_non_spam': np.log(p_word_given_non_spam)
+    }
+
+    return model
     # *** END CODE HERE ***
 
 
