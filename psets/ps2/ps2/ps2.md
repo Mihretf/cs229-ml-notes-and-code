@@ -1,5 +1,0 @@
-1. The data set A training model took 30371 iterations and converged, finished training the mode. The data set B traning model did not converge, it went on and on until stopped automatically, at minumum it went through 1160000 iterations before I stopped it. The theta does not converge it just keeps on increasing and just going and going. 
-
-The reason this happens is: 
-On Dataset A: which is the linealy inseparable one, since we dont have a specific line that will classify these points, we will need to find the best possible number or the best possible weight that will help us to classify the data plots. And because there is a specific value for which we will get the best optimal point, our training successfully converges. 
-On Dataset B: here however we have linerally separable points, which means that we can continue to adjust our weight knobs again and again, increasing it and going up to infinity, because it is separable there will come a better, bigger number that will sort of satisfy the property of our classification, so it will just increase and increase, it will never converge, so we sort of are not able to learn successfully from that. 
