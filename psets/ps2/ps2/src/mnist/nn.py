@@ -21,6 +21,9 @@ def softmax(x):
         A 2d numpy float array containing the softmax results of shape batch_size x number_of_classes
     """
     # *** START CODE HERE ***
+    max_val = np.max(x, axis=-1, keepdims=True)
+    exp_x = np.exp(x - max_val)
+    return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
     # *** END CODE HERE ***
 
 def sigmoid(x):
@@ -34,6 +37,7 @@ def sigmoid(x):
         A numpy float array containing the sigmoid results
     """
     # *** START CODE HERE ***
+    return 1.0 / (1.0 + np.exp(-x))
     # *** END CODE HERE ***
 
 def get_initial_params(input_size, num_hidden, num_output):
@@ -63,6 +67,12 @@ def get_initial_params(input_size, num_hidden, num_output):
     """
 
     # *** START CODE HERE ***
+    params = {}
+    params['W1'] = np.random.randn(input_size, num_hidden)
+    params['b1'] = np.zeros((1, num_hidden))
+    params['W2'] = np.random.randn(num_hidden, num_output)
+    params['b2'] = np.zeros((1, num_output))
+    return params
     # *** END CODE HERE ***
 
 def forward_prop(data, labels, params):
@@ -84,6 +94,21 @@ def forward_prop(data, labels, params):
             3. The average loss for these data elements
     """
     # *** START CODE HERE ***
+    W1 = params['W1']
+    b1 = params['b1']
+    W2 = params['W2']
+    b2 = params['b2']
+
+    z1 = np.dot(data, W1) + b1
+    a1 = sigmoid(z1)
+    z2 = np.dot(a1, W2) + b2
+    output = softmax(z2)
+
+    num_examples = data.shape[0]
+    # Cross-entropy loss averaged over examples (adding a tiny epsilon to prevent log(0))
+    loss = -np.sum(labels * np.log(output + 1e-15)) / num_examples
+
+    return a1, output, loss
     # *** END CODE HERE ***
 
 def backward_prop(data, labels, params, forward_prop_func):
@@ -107,6 +132,29 @@ def backward_prop(data, labels, params, forward_prop_func):
             W1, W2, b1, and b2
     """
     # *** START CODE HERE ***
+    a1, output, loss = forward_prop_func(data, labels, params)
+    num_examples = data.shape[0]
+
+    # Delta for output layer (from part a derivation: y_hat - y)
+    delta2 = output - labels  # shape: (B, K)
+
+    # Gradients for W2 and b2
+    grad_W2 = np.dot(a1.T, delta2) / num_examples
+    grad_b2 = np.sum(delta2, axis=0, keepdims=True) / num_examples
+
+    # Delta for hidden layer using backpropagation rule through sigmoid activation
+    delta1 = np.dot(delta2, params['W2'].T) * a1 * (1 - a1)
+
+    # Gradients for W1 and b1
+    grad_W1 = np.dot(data.T, delta1) / num_examples
+    grad_b1 = np.sum(delta1, axis=0, keepdims=True) / num_examples
+
+    return {
+        'W1': grad_W1,
+        'b1': grad_b1,
+        'W2': grad_W2,
+        'b2': grad_b2
+    }
     # *** END CODE HERE ***
 
 
@@ -132,6 +180,13 @@ def backward_prop_regularized(data, labels, params, forward_prop_func, reg):
             W1, W2, b1, and b2
     """
     # *** START CODE HERE ***
+    grads = backward_prop(data, labels, params, forward_prop_func)
+    
+    # Add L2 regularization penalty to the weight gradients (biases are excluded)
+    grads['W1'] += 2 * reg * params['W1']
+    grads['W2'] += 2 * reg * params['W2']
+
+    return grads
     # *** END CODE HERE ***
 
 def gradient_descent_epoch(train_data, train_labels, learning_rate, batch_size, params, forward_prop_func, backward_prop_func):
@@ -154,6 +209,23 @@ def gradient_descent_epoch(train_data, train_labels, learning_rate, batch_size, 
     """
 
     # *** START CODE HERE ***
+    num_examples = train_data.shape[0]
+    num_batches = num_examples // batch_size
+
+    for b in range(num_batches):
+        start_idx = b * batch_size
+        end_idx = start_idx + batch_size
+
+        x_batch = train_data[start_idx:end_idx]
+        y_batch = train_labels[start_idx:end_idx]
+
+        grads = backward_prop_func(x_batch, y_batch, params, forward_prop_func)
+
+        # Update parameters using mini-batch gradient descent update rule
+        params['W1'] -= learning_rate * grads['W1']
+        params['b1'] -= learning_rate * grads['b1']
+        params['W2'] -= learning_rate * grads['W2']
+        params['b2'] -= learning_rate * grads['b2']
     # *** END CODE HERE ***
 
     # This function does not return anything
